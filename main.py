@@ -41,7 +41,7 @@ if (backgroundAudioPath == None):
 
 # Play background audio on loop
 mixer.music.load(backgroundAudioPath)
-mixer.music.play(-1, 0, 2000)
+mixer.music.play(-1, 0) #, 2000) Fade-in doesn't work with Raspberry Pi 2?
 
 
 def handleLeds():
