@@ -1,29 +1,13 @@
-import sys
-from PySide6.QtWidgets import QApplication, QMainWindow
-from PySide6.QtCore import QFile
-from lightningUi import Ui_Main
 from configparser import ConfigParser
+import pygame, pygame_gui
+import sys, os
 
-# pyside6-uic LightningUi.ui > lightningUi.py
+WINDOW_WIDTH = 320
+WINDOW_HEIGHT = 256
 
 config = ConfigParser()
 config.read("settings.ini")
 settings = {}
-
-class MainWindow(QMainWindow):
-	def __init__(self):
-		super(MainWindow, self).__init__()
-		self.ui = Ui_Main()
-		self.ui.setupUi(self)
-		
-	def volumeBackgroundUpdate(self):
-		self.ui.volumeBackgroundValue.setText(str(int(self.ui.volumeBackgroundSlider.value() ) ) )
-	
-	def volumeEffectsUpdate(self):
-		self.ui.volumeEffectsValue.setText(str(int(self.ui.volumeEffectsSlider.value() ) ) )
-
-def remap(value, inMin, inMax, outMin, outMax):
-	return outMin + (float(value - inMin) / float(inMax - inMin) * (outMax - outMin) )
 
 # Update the settings dictionary from settings.ini
 def initUpdate():
@@ -32,28 +16,39 @@ def initUpdate():
 		for item in config.items(section):
 			settings[section][item[0] ] = item[1]
 
-if (__name__ == "__main__"):
-	app = QApplication(sys.argv)
+def remap(value, inMin, inMax, outMin, outMax):
+	return outMin + (float(value - inMin) / float(inMax - inMin) * (outMax - outMin) )
 
-	initUpdate()
+pygame.init()
+pygame.display.set_caption("GUI Test!")
+windowSurface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT) )
+
+windowBackground = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT) )
+windowBackground.fill(pygame.Color("#000000") )
+
+manager = pygame_gui.UIManager((WINDOW_WIDTH, WINDOW_HEIGHT) )
+clock = pygame.time.Clock()
+
+# ------------------------------------------------------------ UI Elements
+volumeBackgroundLabel = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((16,16), (160,16) ), text="Background Volume")
+buttonTest = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((16,32), (160,32) ), text="Hello, World!", manager=manager)
+
+programRunning = True
+while programRunning:
+	delta = clock.tick(60) / 1000.0
+
+	for event in pygame.event.get():
+		if (event.type == pygame.QUIT):
+			programRunning = False
+		
+		if (event.type == pygame_gui.UI_BUTTON_PRESSED):
+			if (event.ui_element == buttonTest):
+				print("Hello, World!")
+		
+		manager.process_events(event)
 	
-	window = MainWindow()
-	
-	volumeBackgroundValue = remap(float(settings["mixer"]["volumebackground"] ), 0.0,1.0, 0.0, 100.0)
-	window.ui.volumeBackgroundValue.setText(str(int(volumeBackgroundValue) ) )
-	window.ui.volumeBackgroundSlider.setValue(int(volumeBackgroundValue) )
-	window.ui.volumeBackgroundSlider.valueChanged.connect(window.volumeBackgroundUpdate)
+	manager.update(delta)
 
-	volumeEffectsValue = remap(float(settings["mixer"]["volumeeffects"] ), 0.0,1.0, 0.0, 100.0)
-	window.ui.volumeEffectsValue.setText(str(int(volumeEffectsValue) ) )
-	window.ui.volumeEffectsSlider.setValue(int(volumeEffectsValue) )
-	window.ui.volumeEffectsSlider.valueChanged.connect(window.volumeEffectsUpdate)
-
-	window.ui.lightningDelayMinSpinbox.setValue(float(settings["delays"]["lightningdelaymin"] ) )
-	window.ui.lightningDelayMaxSpinbox.setValue(float(settings["delays"]["lightningdelaymax"] ) )
-	window.ui.thunderDelayMinSpinbox.setValue(float(settings["delays"]["thunderdelaymin"] ) )
-	window.ui.thunderDelayMaxSpinbox.setValue(float(settings["delays"]["thunderdelaymax"] ) )
-
-	window.show()
-	
-	sys.exit(app.exec() )
+	windowSurface.blit(windowBackground, (0,0) )
+	manager.draw_ui(windowSurface)
+	pygame.display.update()
